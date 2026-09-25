@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Interactive EPCOT Food & Wine Festival route planner for Saturday, Oct 3, 2026">
+<title>Epcot Festival Route</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#EEF2F5; --surface:#FFFFFF; --surface-2:#F4F7F9;
+  --ink:#14273A; --ink-2:#4A5D6F; --ink-3:#6F8091; --line:#D3DCE3;
+  --water:#CDE3EC; --land:#E3EBE6;
+  --route:#C42B5C; --route-ink:#FFFFFF;
+  --drink:#0E7C8A; --drink-ink:#FFFFFF; --cheese:#9A6200; --warn:#B4331F;
+  --shadow:0 1px 2px rgba(20,39,58,.06),0 10px 28px rgba(20,39,58,.07);
+  --font-display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --font-body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'DM Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1822; --surface:#152431; --surface-2:#1B2E3D;
+    --ink:#E6EEF4; --ink-2:#A7B7C4; --ink-3:#8496A4; --line:#27404F;
+    --water:#1B4256; --land:#182A2C;
+    --route:#FF7A9E; --route-ink:#2A0A16;
+    --drink:#4CC3D1; --drink-ink:#062A30; --cheese:#F0B54A; --warn:#FF8F7A;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1822; --surface:#152431; --surface-2:#1B2E3D;
+  --ink:#E6EEF4; --ink-2:#A7B7C4; --ink-3:#8496A4; --line:#27404F;
+  --water:#1B4256; --land:#182A2C;
+  --route:#FF7A9E; --route-ink:#2A0A16;
+  --drink:#4CC3D1; --drink-ink:#062A30; --cheese:#F0B54A; --warn:#FF8F7A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--font-body);padding-inline:16px;padding-block:0}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--route);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-block:24px 56px}
+
+/* header */
+.top{display:grid;gap:10px;margin-bottom:18px}
+.eyebrow{margin:0;font:500 12px/1.3 var(--font-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2)}
+h1{margin:0;font:700 clamp(30px,5vw,46px)/1.04 var(--font-display);letter-spacing:-.02em;text-wrap:balance}
+.lede{margin:0;max-width:64ch;color:var(--ink-2)}
+
+/* mobile summary bar */
+.minibar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:grid;grid-template-columns:auto auto 1fr;gap:16px;align-items:center;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:16px;box-shadow:var(--shadow)}
+.minibar .lab{display:block;font:500 11px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+.minibar b{font:600 17px/1.1 var(--font-mono);font-variant-numeric:tabular-nums}
+.mb-meter{display:grid;gap:5px;min-width:0}
+.mb-meter small{font-size:12px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb-meter small.warn{color:var(--warn)}
+
+/* layout */
+.layout{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:980px){
+  .layout{grid-template-columns:minmax(0,1fr) 340px;align-items:start;gap:22px}
+  .minibar{display:none}
+  .tray{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
+}
+main{display:grid;gap:18px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.card-pad{padding:16px}
+
+/* map card */
+.maptools{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:14px 16px 6px}
+.maptools p{margin:0;font-size:13px;color:var(--ink-2)}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.seg button{border:0;background:transparent;color:var(--ink-2);padding:6px 12px;border-radius:8px;font:600 13px var(--font-body)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.mapscroll{overflow-x:auto;padding:0 8px}
+.mapscroll svg{display:block;width:100%;min-width:700px;height:auto}
+.maphint{margin:0;padding:0 16px 12px;font-size:12.5px;color:var(--ink-3)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px 16px;border-top:1px solid var(--line)}
+.chip{display:inline-flex;gap:6px;align-items:baseline;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:5px 11px;font:600 13px var(--font-body);color:var(--ink)}
+.chip small{font:500 11.5px var(--font-mono);color:var(--route)}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 1px var(--ink)}
+.chip.planned{border-color:var(--route)}
+
+/* svg map */
+.land{fill:var(--land)}
+.water{fill:var(--water)}
+.promenade{fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-dasharray:1 8;stroke-linecap:round;opacity:.7}
+.maptxt{font:500 13px var(--font-body);fill:var(--ink-2)}
+.maptxt.it{font-style:italic}
+.spine{stroke:var(--ink-3);stroke-width:2;stroke-dasharray:1 7;stroke-linecap:round;fill:none;opacity:.6}
+.plaza{fill:var(--surface);stroke:var(--ink-2);stroke-width:2}
+.sse{fill:var(--surface);stroke:var(--ink-3);stroke-width:2}
+.route{fill:none;stroke:var(--route);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+.route.dash{stroke-width:3.5;stroke-dasharray:2 9}
+.node{cursor:pointer;outline:none}
+.node .hit{fill:transparent}
+.node .dot{fill:var(--surface);stroke:var(--ink-2);stroke-width:2.5;transition:fill .15s,stroke .15s}
+.node:hover .dot,.node:hover .box{stroke:var(--route)}
+.node.planned .dot{fill:var(--route);stroke:var(--route)}
+.node.active .dot{stroke:var(--ink);stroke-width:4.5}
+.node.active.planned .dot{fill:var(--route)}
+.node:focus-visible .dot,.node:focus-visible .box{stroke:var(--ink);stroke-width:4.5}
+.node .num{font:600 14px var(--font-mono);fill:var(--route-ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.lbl{font:600 15px var(--font-body);fill:var(--ink);pointer-events:none}
+.lbl .amt{font:500 13px var(--font-mono);fill:var(--route)}
+.node .box{fill:var(--surface);stroke:var(--ink-2);stroke-width:2;transition:stroke .15s}
+.node.planned .box{stroke:var(--route)}
+.node.active .box{stroke:var(--ink);stroke-width:3.5}
+.fwname{font:700 15px var(--font-body);fill:var(--ink);text-anchor:middle;pointer-events:none}
+.fwsub{font:500 12.5px var(--font-mono);fill:var(--ink-2);text-anchor:middle;pointer-events:none}
+.node.planned .fwsub{fill:var(--route)}
+.badge{fill:var(--route)}
+
+/* menu */
+.menuhead{display:grid;gap:10px;padding:16px 16px 12px}
+.menuhead .row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+.menuhead h2{margin:0;font:700 26px/1.1 var(--font-display);letter-spacing:-.01em}
+.region{margin:0;font:500 12px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.here{margin:0;font:500 13px var(--font-mono);color:var(--route)}
+.booth{border-top:1px solid var(--line)}
+.booth h3{margin:0;padding:14px 16px 2px;font:700 17px/1.2 var(--font-display)}
+.booth .note{margin:0;padding:0 16px 8px;font-size:13px;color:var(--ink-2)}
+.items{list-style:none;margin:0;padding:0}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 14px;align-items:center;padding:9px 16px;border-top:1px solid var(--line);cursor:pointer}
+.item:hover{background:var(--surface-2)}
+.item.on{background:color-mix(in srgb,var(--route) 9%,var(--surface))}
+.iname{font-weight:600;line-height:1.3}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.tag{font:500 11px/1.5 var(--font-mono);padding:0 7px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2)}
+.tag.l{border-style:dashed}
+.tag.c{color:var(--cheese);border-color:var(--cheese)}
+.tag.d{color:var(--drink);border-color:var(--drink)}
+.tag.a{background:var(--drink);border-color:var(--drink);color:var(--drink-ink)}
+.price{font:500 14px var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
+.stepper{display:inline-flex;align-items:center;gap:2px}
+.stepper button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font:600 18px/1 var(--font-body);display:grid;place-items:center;padding:0}
+.stepper button:hover:not(:disabled){border-color:var(--route);color:var(--route)}
+.stepper button:disabled{opacity:.35;cursor:default}
+.stepper output{min-width:24px;text-align:center;font:600 14px var(--font-mono)}
+.item.on .stepper output{color:var(--route)}
+.empty{padding:22px 16px;color:var(--ink-2)}
+
+/* tray */
+.tray{display:grid;gap:14px}
+.label{margin:0;font:500 11.5px var(--font-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.big{margin:4px 0 0;font:700 30px/1.1 var(--font-display);letter-spacing:-.01em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.sub{margin:6px 0 0;color:var(--ink-2);font-size:14px}
+.meter{position:relative;height:9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.meter i{position:absolute;left:0;top:0;bottom:0;display:block}
+.meter .hi{background:color-mix(in srgb,var(--route) 32%,transparent)}
+.meter .lo{background:var(--route)}
+.meter.over .lo{background:var(--warn)}
+.bstatus{margin:6px 0 0;font-size:13px;color:var(--ink-2)}
+.bstatus.warn{color:var(--warn)}
+.controls{display:grid;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.ctl{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
+.ctl label{color:var(--ink-2)}
+.num-in{width:104px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:6px 8px;text-align:right;font:500 14px var(--font-mono)}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink-2)}
+.chk input{width:17px;height:17px;accent-color:var(--route)}
+.banner{margin:0 0 12px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--cheese) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--cheese) 40%,var(--line));font-size:13px;color:var(--ink)}
+.dw{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.dw span{font:500 12px var(--font-mono);border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--ink-2)}
+.dw span.hit{background:var(--drink);border-color:var(--drink);color:var(--drink-ink)}
+.dw span.na{border-style:dashed;color:var(--ink-3)}
+.tkhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tkhead b{font:600 14px var(--font-mono);color:var(--ink)}
+.tknote{margin:8px 0 0;font-size:12.5px;color:var(--ink-3)}
+.dots{display:flex;gap:6px;margin-top:10px}
+.dots i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--cheese);display:block}
+.dots i.on{background:var(--cheese)}
+.rlist{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:2px}
+.rstop{width:100%;display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:10px;align-items:start;text-align:left;border:0;background:transparent;padding:8px 6px;border-radius:8px}
+.rstop:hover{background:var(--surface-2)}
+.rn{width:24px;height:24px;border-radius:50%;background:var(--route);color:var(--route-ink);font:600 12px/24px var(--font-mono);text-align:center}
+.rt b{display:block;font-weight:600;line-height:1.25}
+.rt small{display:block;color:var(--ink-2);font-size:12.5px;line-height:1.35;margin-top:2px}
+.rp{font:500 13px var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:9px;padding:8px 12px;font:600 13px var(--font-body)}
+.btn.primary{background:var(--route);border-color:var(--route);color:var(--route-ink)}
+.btn:hover{border-color:var(--route)}
+.copybox{width:100%;margin-top:10px;min-height:120px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);padding:8px;font:12.5px/1.45 var(--font-mono);color:var(--ink)}
+.toast{margin:8px 0 0;font-size:13px;color:var(--drink)}
+footer{margin-top:22px;font-size:13px;color:var(--ink-2);display:grid;gap:8px;max-width:78ch}
+footer p{margin:0}
+footer a{color:var(--ink);text-underline-offset:3px}
+@media (max-width:520px){
+  .item{grid-template-columns:minmax(0,1fr) auto}
+  .item .price{grid-column:1;grid-row:2}
+  .item .stepper{grid-column:2;grid-row:1 / span 2}
+  .minibar{gap:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* embed mode: automatic inside an iframe (Notion) or with ?embed */
+html.embed .top{display:none}
+html.embed .wrap{padding-block:8px 24px}
+</style>
+</head>
+<body>
+<script>(function(){try{if(window.self!==window.top||/[?&]embed/.test(location.search))document.documentElement.classList.add("embed");}catch(e){document.documentElement.classList.add("embed");}})();</script>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">EPCOT International Food &amp; Wine Festival · 30th year</p>
+    <h1>Saturday, October 3 route</h1>
+    <p class="lede">Every booth is serving on Oct 3, including India, The Alps, Coastal Eats and Earth Eats, which are scheduled to open Oct 2. Tap a stop on the map, add what you want, and the total updates as you go.</p>
+  </header>
+
+  <div class="minibar" aria-live="polite">
+    <div><span class="lab">Total</span><b id="mbTotal">$0.00</b></div>
+    <div><span class="lab" id="mbEachLab">Each</span><b id="mbEach">$0.00</b></div>
+    <div class="mb-meter"><div class="meter" id="mbMeter"><i class="hi"></i><i class="lo"></i></div><small id="mbStatus"></small></div>
+  </div>
+
+  <div class="layout">
+    <main>
+      <section class="card" aria-label="Park map">
+        <div class="maptools">
+          <div class="seg" role="group" aria-label="Walking direction">
+            <button type="button" id="dirCw" aria-pressed="true">Clockwise from Mexico</button>
+            <button type="button" id="dirCcw" aria-pressed="false">Counter-clockwise from Canada</button>
+          </div>
+          <p>Numbers show your order of stops.</p>
+        </div>
+        <div class="mapscroll"><div id="map"></div></div>
+        <p class="maphint">Bird's-eye view, not to scale. Booth positions follow the 2026 festival map. On a phone, swipe the map sideways.</p>
+        <div class="chips" id="chips" aria-label="All stops"></div>
+      </section>
+
+      <section class="card" id="menu" aria-live="polite"></section>
+    </main>
+
+    <aside class="tray" aria-label="Your plan">
+      <section class="card card-pad">
+        <div id="exBanner"></div>
+        <p class="label">Estimated total</p>
+        <p class="big" id="tTotal">$0.00</p>
+        <p class="sub" id="tSub"></p>
+        <div style="margin-top:12px"><div class="meter" id="tMeter"><i class="hi"></i><i class="lo"></i></div><p class="bstatus" id="tStatus"></p></div>
+        <div class="controls">
+          <div class="ctl"><label for="budget">Budget for the day</label><input class="num-in" id="budget" type="number" inputmode="decimal" min="0" step="10"></div>
+          <div class="ctl"><span style="color:var(--ink-2)" id="gLab">Guests sharing</span>
+            <span class="stepper"><button type="button" id="gMinus" aria-label="Fewer guests">−</button><output id="gOut" aria-labelledby="gLab">2</output><button type="button" id="gPlus" aria-label="More guests">+</button></span></div>
+          <label class="chk"><input type="checkbox" id="tax"> Include est. 6.5% sales tax</label>
+        </div>
+      </section>
+
+      <section class="card card-pad">
+        <div class="tkhead"><p class="label" style="margin:0">Drinking around the world</p><b id="dwCount">0/11</b></div>
+        <div class="dw" id="dw"></div>
+        <p class="tknote">A country counts once you add an alcoholic drink from one of its booths.</p>
+      </section>
+
+      <section class="card card-pad">
+        <div class="tkhead"><p class="label" style="margin:0">Emile's Fromage Montage</p><b id="chCount">0/5</b></div>
+        <div class="dots" id="dots"></div>
+        <p class="tknote" id="chNote"></p>
+      </section>
+
+      <section class="card card-pad">
+        <p class="label" style="margin:0">Route</p>
+        <ol class="rlist" id="route"></ol>
+        <div class="btns">
+          <button type="button" class="btn primary" id="copy">Copy plan</button>
+          <button type="button" class="btn" id="example">Load example</button>
+          <button type="button" class="btn" id="clear">Clear all</button>
+        </div>
+        <textarea class="copybox" id="copyBox" readonly hidden aria-label="Plan text"></textarea>
+        <p class="toast" id="toast" role="status"></p>
+      </section>
+    </aside>
+  </div>
+
+  <footer>
+    <p>Prices come from Disney's 2026 Foodie Guide as published by <a href="https://blogmickey.com/2026/08/full-list-of-2026-epcot-food-wine-festival-menus/" target="_blank" rel="noopener">BlogMickey</a> and <a href="https://www.resortsgal.com/blog/epcot-food-and-wine-menus-2026/" target="_blank" rel="noopener">Resorts Gal</a> in August. Where they differ, the page shows the range (Remy Milk Shake) or the one published price (Cheesesteak Macaroni and Cheese). Ranges such as $6.00–$9.75 are listed that way on the menu, so the total shows both ends.</p>
+    <p>Booth locations follow <a href="https://wdwnt.com/2026/08/first-look-at-2026-epcot-international-food-wine-festival-map/" target="_blank" rel="noopener">WDW News Today's festival map</a>. Menus, prices and opening dates can change; check the festival passport in the park.</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- data ---------- */
+var f=function(n,p,t){return {n:n,lo:p,hi:p,t:t||""};};
+var r=function(n,lo,hi,t){return {n:n,lo:lo,hi:hi,t:t||""};};
+var B=function(name,note,dw,items){return {name:name,note:note,dw:dw,items:items};};
+var S=function(id,name,short,reg,a,booths){return {id:id,name:name,short:short,reg:reg,a:a,booths:booths};};
+var BEER=[6,9.75];
+
+var STOPS=[
+S("wc","World Celebration","World Celebration","fw",null,[
+  B("The Wedge (Dairy Does More)","Sept 18 – Nov 8, so it is serving on Oct 3","",[
+    f("Crab and Corn Macaroni and Cheese",7.19,"lc"),
+    f("Cheesesteak Macaroni and Cheese",6.49,"nc"),
+    f("Cannoli Milk Shake",5.49,"nd"),
+    f("Bodegas Avancia Old Vines Godello",8.5,"na"),
+    f("Las Jaras Superbloom Rosé",8.5,"a"),
+    f("Caymus Vineyards Cabernet Sauvignon",13,"a"),
+    f("Wine Flight",12.5,"a"),
+    f("Wine and Cheese Pairing",17.5,"na")]),
+  B("Festival Favorites","Serving since Sept 9","",[
+    f("Potato Pierogi",5.99,"l"),
+    f("Bo Ssam Pork Belly Lettuce Wraps",6.19,"nl"),
+    f("Pumpkin Cheesecake Mousse Trifle",5.29,"nlc"),
+    f("Frozen S'mores",5.29,"d"),
+    r("Schöfferhofer Grapefruit Hefeweizen",6,9.75,"a"),
+    r("Parish SIPS Cabernet Franc Strawberry Berliner Weisse",6,9.75,"a"),
+    r("3 Daughters Beach Blonde Ale",6,9.75,"a"),
+    f("Beer Flight",12.75,"a"),
+    f("Frozen Apple Blossom",16.5,"na")]),
+  B("Brew-Wing Lab at The Odyssey","","",[
+    f("Garlic-Parmesan Wings",7.79),
+    f("Buffalo-Dill Pickle Wings",7.79,"n"),
+    f("Korean Barbecue Wings",7.79),
+    f("Carolina Reaper Pepper-Curry Wings",7.79),
+    f("Sweet Chile-Lime Plant-based Chicken Strips",7.79,"nv"),
+    f("Fried Pickle Spears",5.79),
+    f("Frozen Pomegranate & Raspberry Tea",5.19,"d"),
+    f("Pickle Milk Shake",6.49,"ld"),
+    r("Civil Society Everyday I'm Waffle'n IPA",6,9.75,"na"),
+    r("3 Daughters Peanut Butter Blondie Blonde Ale",6,9.75,"na"),
+    r("Playalinda Pumpkin Cheesecake Blonde Stout",6,9.75,"a"),
+    f("Beer Flight",12.75,"a"),
+    r("Bold Rock Apple Crumble Hard Cider",6,9.75,"a"),
+    r("Ciderboys Cherry Jubilee Hard Cider",6,9.75,"na"),
+    r("Ciderboys Pumpkin Spice Hard Cider",6,9.75,"a"),
+    f("Hard Cider Flight",12.75,"a")]),
+  B("Connections Eatery and Café","","",[
+    f("BBQ Braai Chicken Pizza",12.29,"n"),
+    f("Caramel-Apple Cheesecake Baumkuchen",6.49,"n"),
+    f("Pistachio-Chocolate Mochi Doughnut",5.29,"n"),
+    f("Frozen Waffle Old Fashioned",17.5,"na")])
+]),
+S("wn","World Nature","World Nature","fw",null,[
+  B("Earth Eats","Scheduled to open Oct 2, so it should be serving on Oct 3","",[
+    f("Red Wine-braised Beef Short Rib",8.49,"c"),
+    f("Lemon-Almond-Olive Oil Cake",4.49,"n"),
+    f("Minute Maid Aguas Frescas, Strawberry Hibiscus",4.79,"d"),
+    f("Harken Barrel Fermented Chardonnay",6.5,"a")]),
+  B("Sunshine Seasons","Lower level of The Land","",[
+    f("Mickey-shaped Celebration Macaron",6.29,"n"),
+    r("Remy Milk Shake",10.5,11.49,"d")])
+]),
+S("wd","World Discovery","World Discovery","fw",null,[
+  B("Coastal Eats","Scheduled to open Oct 2, so it should be serving on Oct 3","",[
+    f("Crab Cake",7.49),
+    f("Seafood Pot Pie",7.49),
+    f("Rileys Lookout Sauvignon Blanc",6.5,"a"),
+    f("Boyd & Blair Pomegranate Codder",12.5,"a")]),
+  B("Gyozas of the Galaxy","Near Guardians of the Galaxy","",[
+    f("Basil Pesto Chicken Dumplings",5.99,"n"),
+    f("Street Corn-style Dumplings",5.99),
+    f("Edamame Dumplings",5.29,"nv"),
+    f("Willamette Valley Pinot Gris",7.5,"a")]),
+  B("Flavors from Fire","Near Green Landing Family Play Zone","",[
+    f("Rodizio-style Grilled Beef Skewer",6.99,"l"),
+    f("Smoked Corned Beef",6.49),
+    f("Smoked Chocolate Bread Pudding",4.99,"n"),
+    r("Left Hand Sawtooth Amber Ale",6,9.75,"a"),
+    f("1000 Stories Bourbon Barrel-aged Zinfandel",6.5,"na"),
+    f("Swine Brine",13,"a")]),
+  B("The Fry Basket","Near Test Track","",[
+    f("Adobo Yuca Fries",5.79,"v"),
+    f("Fry Flight",7.99),
+    r("Barrel of Monks Blood Orange Bliss Sour Ale",6,9.75,"na"),
+    f("Boyd & Blair Grapefruit Mule",12.5,"a")]),
+  B("Joffrey's","In World Discovery","",[
+    f("Affogato di Marshmallow Cold Brew",7.49,"nd"),
+    f("Affogato di Marshmallow with Grey Goose",15.99,"na")])
+]),
+
+S("aus","Australia","Australia","ws",116,[
+  B("Australia","Near Disney Traders","",[
+    f("Grilled Bushberry-spiced Shrimp Skewer",6.99),
+    f("Roasted Lamb Chop",8.79,"l"),
+    f("Mixed Berry Pavlova",4.79),
+    f("Yalumba 'The Y Series' Viognier",6.5,"a"),
+    f("Bulletin Place Sauvignon Blanc",6.5,"a"),
+    f("Fowles Farm to Table Shiraz",7.5,"a"),
+    f("Wine Flight",7.5,"a")]),
+  B("Joffrey's near Disney Traders","","",[
+    f("Dolce Affogato Cold Brew",7.49,"nd"),
+    f("Dolce Affogato with Baileys",15.99,"na")])
+]),
+S("mex","Mexico","Mexico","ws",134,[
+  B("Mexico","","Mexico",[
+    f("Tostada de Osso Buco",8.25,"n"),
+    f("Taco de Camarón",8.5,"nl"),
+    f("Paleta de Moras",7,"n"),
+    r("Mexican Craft Beer",6,11,"a"),
+    f("Cherry Nostalgia",13.5,"na"),
+    f("Fruta de la Pasión",13.75,"na")])
+]),
+S("nor","Norway","Norway","ws",152,[
+  B("Norway Cart","Festival item only, no drinks listed","Norway",[
+    f("Caramel Cream and Gjetost Norwegian Brown Cheese Bolle",null,"n")])
+]),
+S("chn","China","China","ws",171,[
+  B("China","","China",[
+    f("Dumplings Trio",7.35,"nl"),
+    f("Smoked Duck Bao Bun",8.25),
+    f("Beijing Zhajiang Noodles",8.5),
+    f("Mango-Peach Bubble Tea",7.95,"d"),
+    f("Dasani Bottled Water",4.25,"d"),
+    r("Honghe Rice Lager",6,10.75,"na"),
+    f("Baijiu Punch",14.25,"a"),
+    f("Hainan Prosperity",14.25,"a"),
+    f("Frozen Strawberry-Jasmine Cocktail",14,"a")])
+]),
+S("ind","India","India","ws",187,[
+  B("India","Scheduled to open Oct 2, so it should be serving on Oct 3","",[
+    f("Potato-Pea Samosas",5.49,"lv"),
+    f("Chicken Tikka Masala",6.49,"l"),
+    f("Mango Lassi",5.29,"d"),
+    r("United Breweries Taj Mahal Premium Lager",6,9.75,"a"),
+    f("Sula Tropicale Brut Sparkling Wine",7.75,"a"),
+    f("Mango Lassi with Camikara 8-Year-Old Cask Aged Rum",12.5,"a")])
+]),
+S("afr","Africa","Africa","ws",201,[
+  B("Refreshment Outpost","","",[
+    f("Berbere-spiced Beef Stew",6.79),
+    f("Sweet Potato Mealie Pap",5.79,"nlv"),
+    f("South African Cream Liqueur Chocolate Mousse",6.29),
+    f("DOLE Whip in a Cone",6.29),
+    f("Frozen Slushy",6.29,"d"),
+    f("Breckenridge Palisade Peach Wheat Ale",12.5,"na"),
+    f("3 Daughters Cinnamon Donut Hard Cider",12.5,"na"),
+    f("Coppertail Cherry Cola Hard Cider",12.5,"na"),
+    f("Midnight Safari",17.5,"na"),
+    f("Bud Light Lager Draft",10,"a"),
+    f("Mango Rum Freeze",16.5,"a"),
+    f("Frozen Brown Elephant",16.5,"a"),
+    f("Outpost Lemonade",16.5,"a")])
+]),
+S("ger","Germany & Alps","Germany & Alps","ws",218,[
+  B("Germany","","Germany",[
+    f("Schinkennudeln",5.29,"lc"),
+    f("Wiener Schnitzel",7.29,"n"),
+    f("Apple Strudel",4.99,"l"),
+    r("Schöfferhofer Orange Spritz Hefeweizen",6,9.75,"na"),
+    r("Weihenstephaner Festbier",6,9.75,"a"),
+    r("von Trapp Oktoberfest Märzen-style Lager",6,9.75,"a"),
+    f("Beer Flight",12.75,"a"),
+    f("Selbach-Oster Riesling",9,"a")]),
+  B("Sommerfest","","",[
+    f("Zwiebelkuchen",9.79),
+    f("Cinnamon Pretzel Cold Brew",6.49,"nd")]),
+  B("The Alps","Scheduled to open Oct 2, so it should be serving on Oct 3","",[
+    f("Warm Raclette Swiss Cheese",6.79,"nlc"),
+    f("Tartiflette",5.49,"nc"),
+    f("Kirschwasser Torte",5.49),
+    f("Salomon Undhof Stein Kremstal Riesling",7.5,"na"),
+    f("Loimer Lois Grüner Veltliner",6.5,"na"),
+    f("Schlumberger Klassik Brut",7.75,"na"),
+    f("Wine Flight",8.5,"a")])
+]),
+S("spa","Spain","Spain","ws",236,[
+  B("Spain","Between Germany and Italy","",[
+    f("Croquetas de Jamón",6.99,"n"),
+    f("Paella Caldoso",7.99,"nl"),
+    f("Basque Cheesecake",5.29,"c"),
+    f("Volver Quinta del '67 Garnacha",7.5,"a"),
+    f("Summer in Spain",13,"a")])
+]),
+S("ita","Italy","Italy","ws",252,[
+  B("Italy","","Italy",[
+    f("Stromboli",8,"n"),
+    f("Pollo al Marsala",9,"nl"),
+    f("Almond Panna Cotta",6,"n"),
+    r("Peroni Pilsner",6.5,12,"a"),
+    f("Prosecco",12,"a"),
+    f("Saracco Moscato d'Asti",13,"na"),
+    f("Cantine Guidi Selezione Privata Luca Red Blend",12,"na"),
+    f("Villa Matilde Falanghina",12,"na"),
+    f("Italian Red Sangria",14,"a"),
+    f("Amaretto Bellini",16,"na"),
+    f("Italian-inspired Blood Orange Margarita",15,"a")])
+]),
+S("usa","USA","USA","ws",272,[
+  B("Hops & Barley","American Adventure","USA",[
+    f("Gulf Coast-style Seafood Roll",8.99,"l"),
+    f("Smoked Brisket and Cheddar Melt",6.49,"n"),
+    f("Freshly Baked Chocolate Pudding Cake",4.99),
+    r("Harpoon Southie Lager",6,9.75,"na"),
+    r("Samuel Adams Boston Brick Red",6,9.75,"na"),
+    r("Allagash Haunted House Hoppy Dark Ale",6,9.75,"na"),
+    f("Beer Flight",12.75,"a")]),
+  B("Regal Eagle Smokehouse","American Adventure","USA",[
+    f("Blackberry Buckle",4.79,"n"),
+    f("Pumpkin Pie Milk Shake",6.79,"nd")]),
+  B("Block & Hans","American Adventure","USA",[
+    f("Spicy Strawberry-Mango Smoothie",6.29,"nd"),
+    f("Spicy Strawberry-Mango Smoothie with Ole Smoky Moonshine",16.5,"na")]),
+  B("Funnel Cake","Between America and Japan","USA",[
+    f("Pumpkin Pie Funnel Cake",12.5,"n")]),
+  B("Joffrey's at The American Adventure","","USA",[
+    f("Affogato alle Mandorle Cold Brew",7.49,"nd"),
+    f("Affogato alle Mandorle with Grey Goose",15.99,"na")])
+]),
+S("jpn","Japan","Japan","ws",296,[
+  B("Japan","","Japan",[
+    f("Spicy Temaki Hand Roll",9,"nl"),
+    f("Beef Wagyu Temaki Hand Roll",10.25,"n"),
+    f("Teriyaki Chicken Bun",8),
+    f("Mango-Apple Fruit Pearl",6.5,"nd"),
+    f("Mango-Apple Fruit Pearl with Wasabi-Soy Potato Chips",10,"nd"),
+    r("Sapporo Reserve",5,9.5,"na"),
+    r("Sapporo Reserve with Wasabi-Soy Potato Chips",8.5,13,"na"),
+    f("Autumn Breeze",8.25,"na"),
+    f("Kirinzan Lemonade Sake",13.5,"na")])
+]),
+S("gre","Greece","Greece","ws",312,[
+  B("Greece","Between Japan and Morocco","",[
+    f("Spanakopita",5.19),
+    f("Griddled Cheese",5.49,"c"),
+    f("Chicken Souvlaki Gyro",6.99,"nl"),
+    f("Mylonas Assyrtiko Dry White",6.5,"a"),
+    f("Zoe Rosé",6.5,"a"),
+    f("Kir-Yianni Naoussa Xinomavro",7.5,"a"),
+    f("Wine Flight",7.5,"a"),
+    f("Greek Melon Limeade",12,"a")])
+]),
+S("mor","Morocco","Morocco","ws",325,[
+  B("Tangierine Café: Flavors of the Medina","","Morocco",[
+    f("Plant-based Falafel Wrap",6.29,"v"),
+    f("Chermoula Chicken Hummus Bowl",6.79,"n"),
+    f("Spiced Flank Steak Hummus Bowl",7.29,"n"),
+    f("Ras el Hanout Cauliflower Bowl",6.49,"nlv"),
+    f("Chocolate-Pistachio Cookie",4.29,"n"),
+    r("Carib Honey & Fig Dream Hard Cider",6,9.75,"na"),
+    r("Keel Farms Golden Apple Chai Hard Cider",6,9.75,"a"),
+    r("Keel Farms Goji Berry Citrus Hard Cider",6,9.75,"na"),
+    f("Hard Cider Flight",12.75,"a"),
+    f("Fig Cocktail",12,"a")])
+]),
+S("bel","Belgium","Belgium","ws",337,[
+  B("Belgium","Between Morocco and France","",[
+    f("Beer-braised Beef",6.79),
+    f("Belgian Waffle",5.49,"nl"),
+    f("Chilled Belgian Coffee",5.29,"d"),
+    r("Van Steenberge Piraat 7 Strong Ale",6,9.75,"na"),
+    r("St. Bernardus Watou Blond Ale",6,9.75,"na"),
+    r("Duchesse Red Sweet & Tart Cherry Ale",6,9.75,"a"),
+    f("Beer Flight",12.75,"a"),
+    f("Chilled Belgian Coffee with Salted Caramel Liqueur",12.5,"a")])
+]),
+S("bra","Brazil","Brazil","ws",347,[
+  B("Brazil","Between Morocco and France","",[
+    f("Pão de Queijo",5.19,"lc"),
+    f("Moqueca de Camarão",6.99,"n"),
+    r("BrewDog Peach Mango Wheat Ale",6,9.75,"na"),
+    f("Frozen Caipirinha",12.5,"a")])
+]),
+S("fra","France","France","ws",358,[
+  B("France","","France",[
+    f("Brioche aux Épices, Trois Fromages Mornay",8.95),
+    f("Trio d'Escargots",9.25,"l"),
+    f("Boeuf Braisé au Vin Rouge",9.5,"n"),
+    f("Crème Brûlée Pistache",7.95,"n"),
+    f("Plaimont ELIA Colombard",6.95,"na"),
+    f("La Roche Prestige Cuvée",7.95,"na"),
+    f("Chilled French Cosmo",15.5,"a")])
+]),
+S("uk","UK","UK","ws",370,[
+  B("UK Beer Cart","","UK",[
+    f("Sparkling Cucumber-Gin Cocktail",17.5,"na")])
+]),
+S("can","Canada","Canada","ws",388,[
+  B("Canada","","Canada",[
+    f("Cheddar and Bacon Soup",6.29,"l"),
+    f("Filet Mignon",10.49,"l"),
+    r("Collective Arts Festbier",6,9.75,"na"),
+    f("Château des Charmes Pétales Rouge",9.5,"a")]),
+  B("La Poutinerie (Air Canada)","","Canada",[
+    f("Seoul, South Korea: Bo Ssam Pork Poutine",11.99,"n"),
+    f("Spiced Apple Slushy",6.29,"nd"),
+    f("Spiced Apple Mule",14.5,"na")]),
+  B("Canada Popcorn Cart","","Canada",[
+    f("Northern Ruby",17.5,"na")]),
+  B("Joffrey's between the UK and Canada","","",[
+    f("Notte di Caramello Cold Brew",7.49,"nd"),
+    f("Notte di Caramello with Baileys",15.99,"na")])
+]),
+S("sip","Shimmering Sips","Shimmering Sips","ws",403,[
+  B("Shimmering Sips","Between Canada and Port of Entry. Cheese-stamp prize is redeemed here.","",[
+    f("Strawberry Champagne Trifle",5.79,"v"),
+    f("Tropical Mimosa",7.75,"a"),
+    f("Berry Mimosa",7.75,"a"),
+    f("Blood Orange Mimosa",7.75,"a"),
+    f("Mimosa Flight",15,"a")])
+]),
+S("swi","Swirled Showcase","Swirled Showcase","ws",415,[
+  B("Swirled Showcase","Sources place it near Canada or on the Imagination! walkway","",[
+    f("Liquid Nitrogen Almond Truffle Mousse",5.49,"l"),
+    f("Soft-serve in a Waffle Cone",6.29),
+    f("Frozen Szarlotka",6.79,"nld"),
+    f("Ice Cream Float",6.79,"d"),
+    f("Früli Strawberry Belgian White Beer",12.5,"a"),
+    f("Strawberry Beer Float",13.25,"a"),
+    f("Banfi Rosa Regale Sparkling Red",15,"a"),
+    f("Frozen Szarlotka with Żubrówka Bison Grass Vodka",13,"na"),
+    f("Irish Milk Shake",13,"a")])
+]),
+S("haw","Hawai'i","Hawai'i","ws",426,[
+  B("Hawai'i","Near Port of Entry","",[
+    f("Slow-roasted Pork Slider",5.99,"l"),
+    f("Hawaiian Rice Bowl",6.29),
+    f("Pineapple Cheesecake",5.49,"c"),
+    r("Lei'd Back Double IPA",6,9.75,"na"),
+    f("Sparkling Pineapple Wine",10,"a"),
+    f("O'ahu Sunrise",14.5,"a")])
+]),
+S("gar","Garden Walk","Garden Walk","ws",438,[
+  B("Bramblewood Bites","Walkway between Imagination! and World Showcase","",[
+    f("Grilled Cider-brined Pork Tenderloin",7.19),
+    f("Cast Iron-seared River Trout",7.29),
+    f("Brûléed Sweet Potatoes",4.99,"n"),
+    r("Crooked Can Banana Bread Wheat Beer",6,9.75,"na"),
+    f("Spiced Apple Rum Old Fashioned",12.5,"a")]),
+  B("Milled & Mulled","Walkway between Imagination! and World Showcase","",[
+    f("Butternut Squash and Ginger Bisque",5.49),
+    f("Freshly Baked Carrot Cake",4.99,"l"),
+    f("Fall Fruit Cheesecake with Boursin Fig & Balsamic",5.5,"c"),
+    f("Apple-Cinnamon and Caramel Mini Churros Sundae",5.29),
+    r("Keel Farms Maple Harvest Hard Cider",5.75,9.75,"a"),
+    r("3 Daughters Apple Strudel Hard Cider",6,9.75,"a")]),
+  B("Forest & Field","Walkway between Imagination! and World Showcase","",[
+    f("Spicy Black Bean-Mushroom Chili",5.99,"nv"),
+    f("Pumpkin-Mascarpone Ravioli",5.49),
+    f("Schiacciata Sandwich",6.29),
+    r("Brewery Ommegang All Hallows Treat Stout",6,9.75,"a"),
+    f("Famille Hugel Classic Pinot Noir",7,"a"),
+    f("Daou Vineyards Chardonnay",6.5,"a")])
+])
+];
+
+var byId={},itemById={};
+STOPS.forEach(function(s){
+  byId[s.id]=s;
+  s.booths.forEach(function(b,bi){b.items.forEach(function(it,ii){
+    it.id=s.id+"."+bi+"."+ii; it.stop=s; it.booth=b; itemById[it.id]=it;
+  });});
+});
+var DW=["Mexico","Norway","China","Germany","Italy","USA","Japan","Morocco","France","UK","Canada"];
+var EXAMPLE=[["mex","Taco de Camarón"],["mex","Fruta de la Pasión"],["chn","Dumplings Trio"],["chn","Honghe Rice Lager"],
+  ["ger","Wiener Schnitzel"],["ger","Weihenstephaner Festbier"],["ita","Amaretto Bellini"],["usa","Samuel Adams Boston Brick Red"],
+  ["jpn","Spicy Temaki Hand Roll"],["jpn","Sapporo Reserve"],["mor","Fig Cocktail"],["fra","Chilled French Cosmo"],
+  ["uk","Sparkling Cucumber-Gin Cocktail"],["can","Cheddar and Bacon Soup"],["can","Northern Ruby"]];
+
+/* ---------- map geometry ---------- */
+var CX=500,CY=340,R=270;
+var FWPOS={wc:[500,738],wn:[240,762],wd:[760,762]};
+var ENTR=[500,852],PLAZA=[500,610];
+
+/* ---------- state ---------- */
+var KEY="epcot-oct3-route-v1";
+function findItem(sid,name){var s=byId[sid],out=null;s.booths.forEach(function(b){b.items.forEach(function(it){if(it.n===name&&!out)out=it;});});return out;}
+function exampleSel(){var o={};EXAMPLE.forEach(function(e){var it=findItem(e[0],e[1]);if(it)o[it.id]=1;});return o;}
+function fresh(){return {sel:exampleSel(),dir:"cw",guests:2,budget:200,tax:false,filter:"all",active:"mex",example:true};}
+function load(){
+  try{
+    var raw=localStorage.getItem(KEY); if(!raw) return null;
+    var s=JSON.parse(raw); if(!s||typeof s.sel!=="object") return null;
+    var clean={}; Object.keys(s.sel).forEach(function(k){var q=parseInt(s.sel[k],10); if(itemById[k]&&q>0) clean[k]=Math.min(q,20);});
+    s.sel=clean;
+    s.dir=s.dir==="ccw"?"ccw":"cw";
+    s.guests=Math.max(1,Math.min(12,parseInt(s.guests,10)||1));
+    s.budget=isFinite(+s.budget)&&+s.budget>=0?+s.budget:200;
+    s.tax=!!s.tax; s.filter=["all","food","drinks","alcohol"].indexOf(s.filter)>-1?s.filter:"all";
+    s.active=byId[s.active]?s.active:"mex"; s.example=!!s.example;
+    return s;
+  }catch(e){return null;}
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}}
+var st=load()||fresh();
+
+/* ---------- helpers ---------- */
+function q(s){return document.querySelector(s);}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function money(n){return "$"+n.toFixed(2);}
+function qty(id){return st.sel[id]||0;}
+function kx(){return st.tax?1.065:1;}
+function isDrink(t){return /[da]/.test(t);}
+function pos(a,rad){var t=a*Math.PI/180;return [CX+rad*Math.cos(t),CY+rad*Math.sin(t)];}
+function rng(lo,hi){return hi>lo+0.005?money(lo)+"–"+money(hi):money(lo);}
+
+function stopAmt(s){
+  var lo=0,hi=0,n=0,k=kx();
+  s.booths.forEach(function(b){b.items.forEach(function(it){var c=qty(it.id);if(c>0){n+=c;if(it.lo!==null){lo+=it.lo*c;hi+=it.hi*c;}}});});
+  return {lo:lo*k,hi:hi*k,n:n};
+}
+function totals(){
+  var lo=0,hi=0,n=0,unp=0,k=kx();
+  Object.keys(st.sel).forEach(function(id){var it=itemById[id],c=qty(id);if(!it||c<1)return;n+=c;if(it.lo===null)unp+=c;else{lo+=it.lo*c;hi+=it.hi*c;}});
+  return {lo:lo*k,hi:hi*k,n:n,unp:unp};
+}
+function routeStops(){
+  var sel=STOPS.filter(function(s){return stopAmt(s).n>0;});
+  var cw=st.dir==="cw";
+  var fwOrder=["wc",cw?"wd":"wn",cw?"wn":"wd"].map(function(i){return byId[i];}).filter(function(s){return sel.indexOf(s)>-1;});
+  var ws=sel.filter(function(s){return s.reg==="ws";}).sort(function(a,b){return cw?a.a-b.a:b.a-a.a;});
+  return fwOrder.concat(ws);
+}
+
+/* ---------- map ---------- */
+function routeSVG(){
+  var rs=routeStops(); if(!rs.length) return "";
+  var fw=rs.filter(function(s){return s.reg==="fw";}),ws=rs.filter(function(s){return s.reg==="ws";});
+  var pts=[ENTR].concat(fw.map(function(s){return FWPOS[s.id];})); if(ws.length) pts.push(PLAZA);
+  var out="";
+  if(pts.length>1) out+='<polyline class="route dash" points="'+pts.map(function(p){return p.join(",");}).join(" ")+'"/>';
+  if(ws.length){
+    var cw=st.dir==="cw",start=cw?90:450,end=ws[ws.length-1].a;
+    var p0=pos(start,R),p1=pos(end,R),d=Math.abs(end-start);
+    out+='<path class="route" d="M'+p0[0].toFixed(1)+" "+p0[1].toFixed(1)+" A"+R+" "+R+" 0 "+(d>180?1:0)+" "+(cw?1:0)+" "+p1[0].toFixed(1)+" "+p1[1].toFixed(1)+'"/>';
+  }
+  return out;
+}
+function renderMap(){
+  var order={};routeStops().forEach(function(s,i){order[s.id]=i+1;});
+  var h='<svg viewBox="100 0 800 880" role="group" aria-label="EPCOT map with booth stops">';
+  h+='<circle class="land" cx="'+CX+'" cy="'+CY+'" r="322"/>';
+  h+='<rect class="land" x="140" y="655" width="720" height="205" rx="64"/>';
+  h+='<circle class="water" cx="'+CX+'" cy="'+CY+'" r="205"/>';
+  h+='<circle class="promenade" cx="'+CX+'" cy="'+CY+'" r="'+R+'"/>';
+  h+='<text class="maptxt it" x="'+CX+'" y="'+(CY+4)+'" text-anchor="middle">World Showcase Lagoon</text>';
+  h+='<line class="spine" x1="500" y1="620" x2="500" y2="705"/>';
+  h+='<rect class="plaza" x="492" y="602" width="16" height="16" rx="3" transform="rotate(45 500 610)"/>';
+  h+='<text class="maptxt" x="500" y="584" text-anchor="middle">Showcase Plaza</text>';
+  h+='<circle class="sse" cx="500" cy="806" r="20"/><text class="maptxt" x="530" y="811">Spaceship Earth</text>';
+  h+='<text class="maptxt" x="500" y="874" text-anchor="middle">Main entrance</text>';
+  h+=routeSVG();
+  STOPS.forEach(function(s){
+    var a=stopAmt(s),planned=a.n>0,act=st.active===s.id;
+    var cls="node"+(planned?" planned":"")+(act?" active":"")+(s.reg==="fw"?" fw":"");
+    var label=s.name+(planned?", "+a.n+" item"+(a.n>1?"s":"")+" chosen":"");
+    if(s.reg==="fw"){
+      var c=FWPOS[s.id],nb=s.booths.length;
+      h+='<g class="'+cls+'" data-id="'+s.id+'" tabindex="0" role="button" aria-label="'+esc(label)+'" transform="translate('+c[0]+' '+c[1]+')">';
+      h+='<rect class="box" x="-84" y="-28" width="168" height="56" rx="14"/>';
+      h+='<text class="fwname" y="-3">'+esc(s.name)+'</text>';
+      h+='<text class="fwsub" y="16">'+(planned?esc(money(a.lo)+(a.hi>a.lo+.005?"+":"")):nb+" booths")+'</text>';
+      if(planned) h+='<circle class="badge" cx="-84" cy="-28" r="12"/><text class="num" x="-84" y="-28">'+order[s.id]+'</text>';
+      h+='</g>';
+    }else{
+      var p=pos(s.a,R),t=s.a*Math.PI/180,cs=Math.cos(t),sn=Math.sin(t);
+      var anchor=cs>0.25?"start":(cs<-0.25?"end":"middle");
+      var lx=(35*cs).toFixed(1),H=planned?17:0,y0;
+      if(sn<-0.5) y0=35*sn-4-H; else if(sn>0.5) y0=35*sn+13; else y0=35*sn+5-H/2;
+      h+='<g class="'+cls+'" data-id="'+s.id+'" tabindex="0" role="button" aria-label="'+esc(label)+'" transform="translate('+p[0].toFixed(1)+' '+p[1].toFixed(1)+')">';
+      h+='<circle class="hit" r="24"/><circle class="dot" r="15"/>';
+      h+='<text class="num">'+(planned?order[s.id]:"")+'</text>';
+      h+='<text class="lbl" x="'+lx+'" y="'+y0.toFixed(1)+'" text-anchor="'+anchor+'">'+esc(s.short)+(planned?'<tspan class="amt" x="'+lx+'" dy="17">'+esc(money(a.lo)+(a.hi>a.lo+.005?"+":""))+'</tspan>':"")+'</text>';
+      h+='</g>';
+    }
+  });
+  h+='</svg>';
+  q("#map").innerHTML=h;
+}
+
+/* ---------- chips ---------- */
+function renderChips(){
+  q("#chips").innerHTML=STOPS.map(function(s){
+    var a=stopAmt(s);
+    return '<button type="button" class="chip'+(a.n?" planned":"")+'" data-id="'+s.id+'" aria-pressed="'+(st.active===s.id)+'">'+esc(s.short)+(a.n?' <small>'+esc(money(a.lo))+'</small>':"")+'</button>';
+  }).join("");
+}
+
+/* ---------- menu ---------- */
+function passes(t){
+  if(st.filter==="all") return true;
+  if(st.filter==="food") return !isDrink(t);
+  if(st.filter==="drinks") return isDrink(t);
+  return t.indexOf("a")>-1;
+}
+function tagsHTML(t){
+  var o="";
+  if(t.indexOf("n")>-1) o+='<span class="tag n">New</span>';
+  if(t.indexOf("l")>-1) o+='<span class="tag l">30th</span>';
+  if(t.indexOf("c")>-1) o+='<span class="tag c">Cheese stamp</span>';
+  if(t.indexOf("v")>-1) o+='<span class="tag v">Plant-based</span>';
+  if(t.indexOf("a")>-1) o+='<span class="tag a">Alcohol</span>'; else if(t.indexOf("d")>-1) o+='<span class="tag d">Drink</span>';
+  return o;
+}
+function priceText(it){return it.lo===null?"TBD":(it.hi>it.lo?money(it.lo)+"–"+money(it.hi):money(it.lo));}
+function renderMenu(){
+  var s=byId[st.active],a=stopAmt(s);
+  var region=s.reg==="fw"?"Future World":"World Showcase";
+  var h='<div class="menuhead"><p class="region">'+region+'</p><div class="row"><h2>'+esc(s.name)+'</h2>';
+  h+='<div class="seg" role="group" aria-label="Filter menu">';
+  [["all","All"],["food","Food"],["drinks","Drinks"],["alcohol","Alcohol"]].forEach(function(o){h+='<button type="button" data-filter="'+o[0]+'" aria-pressed="'+(st.filter===o[0])+'">'+o[1]+'</button>';});
+  h+='</div></div><p class="here" id="here"></p></div>';
+  var shown=0;
+  s.booths.forEach(function(b){
+    var items=b.items.filter(function(it){return passes(it.t);});
+    if(!items.length) return;
+    shown+=items.length;
+    h+='<div class="booth"><h3>'+esc(b.name)+'</h3>'+(b.note?'<p class="note">'+esc(b.note)+'</p>':"")+'<ul class="items">';
+    items.forEach(function(it){
+      var c=qty(it.id);
+      h+='<li class="item'+(c?" on":"")+'" data-id="'+it.id+'"><div><div class="iname">'+esc(it.n)+'</div><div class="tags">'+tagsHTML(it.t)+'</div></div>';
+      h+='<span class="price">'+priceText(it)+'</span>';
+      h+='<span class="stepper"><button type="button" data-dec aria-label="Remove one '+esc(it.n)+'"'+(c?"":" disabled")+'>−</button><output>'+c+'</output><button type="button" data-inc aria-label="Add one '+esc(it.n)+'">+</button></span></li>';
+    });
+    h+='</ul></div>';
+  });
+  if(!shown) h+='<p class="empty">Nothing here matches this filter. Try another one.</p>';
+  q("#menu").innerHTML=h;
+  paintHere();
+}
+function paintHere(){
+  var el=q("#here"); if(!el) return;
+  var a=stopAmt(byId[st.active]);
+  el.textContent=a.n?a.n+" chosen here · "+rng(a.lo,a.hi):"Nothing chosen here yet";
+}
+function paintRow(id){
+  var row=q('#menu .item[data-id="'+id+'"]'); if(!row) return;
+  var c=qty(id);
+  row.classList.toggle("on",c>0);
+  row.querySelector("output").textContent=c;
+  row.querySelector("[data-dec]").disabled=c===0;
+}
+
+/* ---------- summary ---------- */
+function meterFill(el,lo,hi,budget){
+  var box=el; if(!box) return;
+  var pl=budget>0?Math.min(100,lo/budget*100):(lo>0?100:0), ph=budget>0?Math.min(100,hi/budget*100):(hi>0?100:0);
+  box.querySelector(".lo").style.width=pl+"%"; box.querySelector(".hi").style.width=ph+"%";
+  box.classList.toggle("over",lo>budget);
+}
+function statusText(lo,hi,budget){
+  if(budget<=0) return {t:"Set a budget to see what is left.",w:false};
+  if(hi<=budget) return {t:money(budget-hi)+" left in the budget",w:false};
+  if(lo<=budget) return {t:"Within budget at smaller pours; "+money(hi-budget)+" over at larger ones",w:true};
+  return {t:"Over budget by "+money(lo-budget),w:true};
+}
+function renderSummary(){
+  var T=totals(),g=st.guests,b=st.budget;
+  var total=rng(T.lo,T.hi), each=T.hi>T.lo+.005?money(T.lo/g)+"–"+money(T.hi/g):money(T.lo/g);
+  q("#tTotal").textContent=total;
+  q("#tSub").textContent=T.n+" item"+(T.n===1?"":"s")+" · "+each+" per guest"+(T.unp?" · "+T.unp+" without a published price":"");
+  q("#mbTotal").textContent=T.hi>T.lo+.005?money(T.lo)+"+":money(T.lo);
+  q("#mbEach").textContent=T.hi>T.lo+.005?money(T.lo/g)+"+":money(T.lo/g);
+  q("#mbEachLab").textContent="Each ("+g+")";
+  var stt=statusText(T.lo,T.hi,b);
+  var t1=q("#tStatus"),t2=q("#mbStatus");
+  t1.textContent=stt.t; t1.classList.toggle("warn",stt.w);
+  t2.textContent=stt.t; t2.classList.toggle("warn",stt.w);
+  meterFill(q("#tMeter"),T.lo,T.hi,b); meterFill(q("#mbMeter"),T.lo,T.hi,b);
+  q("#gOut").textContent=g;
+  q("#gMinus").disabled=g<=1; q("#gPlus").disabled=g>=12;
+  var bi=q("#budget"); if(document.activeElement!==bi) bi.value=b;
+  q("#tax").checked=st.tax;
+  q("#exBanner").innerHTML=st.example?'<p class="banner">Example picks so you can see how it works. Clear all to start your own.</p>':"";
+
+  /* drinking around the world */
+  var hit={};
+  Object.keys(st.sel).forEach(function(id){var it=itemById[id];if(it&&qty(id)>0&&it.t.indexOf("a")>-1&&it.booth.dw) hit[it.booth.dw]=true;});
+  var n=0;
+  q("#dw").innerHTML=DW.map(function(c){
+    var on=!!hit[c]; if(on) n++;
+    return '<span class="'+(on?"hit":(c==="Norway"?"na":""))+'"'+(c==="Norway"?' title="Norway\'s festival cart has food only"':"")+'>'+c+(on?" ✓":"")+'</span>';
+  }).join("");
+  q("#dwCount").textContent=n+"/"+DW.length;
+
+  /* cheese stamps */
+  var ch=0;
+  Object.keys(st.sel).forEach(function(id){var it=itemById[id];if(it&&qty(id)>0&&it.t.indexOf("c")>-1) ch++;});
+  var dots="";for(var i=0;i<5;i++) dots+='<i class="'+(i<ch?"on":"")+'"></i>';
+  q("#dots").innerHTML=dots;
+  q("#chCount").textContent=Math.min(ch,5)+"/5";
+  q("#chNote").textContent=ch>=5?"Five stamps earns a Key Lime DOLE Whip in a souvenir cup at Shimmering Sips.":"Five different cheese dishes earn a Key Lime DOLE Whip at Shimmering Sips.";
+
+  /* route list */
+  var rs=routeStops();
+  q("#route").innerHTML=rs.length?rs.map(function(s,i){
+    var a=stopAmt(s),names=[];
+    s.booths.forEach(function(bt){bt.items.forEach(function(it){var c=qty(it.id);if(c>0) names.push((c>1?c+"× ":"")+it.n);});});
+    var txt=names.slice(0,3).join(", ")+(names.length>3?" +"+(names.length-3)+" more":"");
+    return '<li><button type="button" class="rstop" data-go="'+s.id+'"><span class="rn">'+(i+1)+'</span><span class="rt"><b>'+esc(s.name)+'</b><small>'+esc(txt)+'</small></span><span class="rp">'+esc(money(a.lo)+(a.hi>a.lo+.005?"+":""))+'</span></button></li>';
+  }).join(""):'<li class="tknote">Nothing chosen yet. Pick a stop on the map.</li>';
+}
+
+function paintAll(){renderMap();renderChips();renderSummary();paintHere();}
+function touch(){st.example=false;}
+
+/* ---------- actions ---------- */
+function change(id,d){
+  var c=Math.max(0,Math.min(20,qty(id)+d));
+  if(c===qty(id)) return;
+  if(c===0) delete st.sel[id]; else st.sel[id]=c;
+  touch(); save(); paintRow(id); paintAll();
+}
+function selectStop(id,focus){
+  st.active=id; save(); renderMenu(); paintAll();
+  if(focus){var n=q('#map [data-id="'+id+'"]'); if(n) n.focus({preventScroll:true});}
+}
+function planText(){
+  var rs=routeStops(),T=totals(),g=st.guests;
+  var lines=["EPCOT Food & Wine Festival, Sat Oct 3 ("+(st.dir==="cw"?"clockwise from Mexico":"counter-clockwise from Canada")+")",""];
+  rs.forEach(function(s,i){
+    var a=stopAmt(s);
+    lines.push((i+1)+". "+s.name+" – "+rng(a.lo,a.hi));
+    s.booths.forEach(function(b){b.items.forEach(function(it){var c=qty(it.id);if(c>0) lines.push("   "+(c>1?c+"× ":"")+it.n+(it.lo===null?" (price TBD)":""));});});
+  });
+  lines.push("");
+  lines.push("Total: "+rng(T.lo,T.hi)+(st.tax?" (with est. 6.5% tax)":"")+" · "+g+" guest"+(g>1?"s":"")+": "+(T.hi>T.lo+.005?money(T.lo/g)+"–"+money(T.hi/g):money(T.lo/g))+" each");
+  return lines.join("\n");
+}
+function say(m){var t=q("#toast");t.textContent=m;setTimeout(function(){if(t.textContent===m) t.textContent="";},3500);}
+
+/* ---------- events ---------- */
+q("#map").addEventListener("click",function(e){var n=e.target.closest(".node");if(n) selectStop(n.getAttribute("data-id"),true);});
+q("#map").addEventListener("keydown",function(e){
+  if(e.key!=="Enter"&&e.key!==" ") return;
+  var n=e.target.closest&&e.target.closest(".node"); if(!n) return;
+  e.preventDefault(); selectStop(n.getAttribute("data-id"),true);
+});
+q("#chips").addEventListener("click",function(e){var b=e.target.closest(".chip");if(!b) return;selectStop(b.getAttribute("data-id"),false);var m=q("#menu");if(window.matchMedia("(max-width:979px)").matches) m.scrollIntoView({behavior:"smooth",block:"start"});});
+q("#route").addEventListener("click",function(e){var b=e.target.closest("[data-go]");if(b) selectStop(b.getAttribute("data-go"),false);});
+q("#menu").addEventListener("click",function(e){
+  var fb=e.target.closest("[data-filter]");
+  if(fb){st.filter=fb.getAttribute("data-filter");save();renderMenu();return;}
+  var row=e.target.closest(".item"); if(!row) return;
+  var id=row.getAttribute("data-id"),b=e.target.closest("button");
+  if(b&&b.hasAttribute("data-dec")){change(id,-1);return;}
+  change(id,1);
+  if(b){var nb=q('#menu .item[data-id="'+id+'"] [data-inc]');if(nb) nb.focus({preventScroll:true});}
+});
+q("#dirCw").addEventListener("click",function(){setDir("cw");});
+q("#dirCcw").addEventListener("click",function(){setDir("ccw");});
+function setDir(d){st.dir=d;save();q("#dirCw").setAttribute("aria-pressed",d==="cw");q("#dirCcw").setAttribute("aria-pressed",d==="ccw");paintAll();}
+q("#gMinus").addEventListener("click",function(){st.guests=Math.max(1,st.guests-1);save();renderSummary();});
+q("#gPlus").addEventListener("click",function(){st.guests=Math.min(12,st.guests+1);save();renderSummary();});
+q("#budget").addEventListener("input",function(e){var v=parseFloat(e.target.value);st.budget=isFinite(v)&&v>=0?v:0;save();renderSummary();});
+q("#tax").addEventListener("change",function(e){st.tax=e.target.checked;save();paintAll();});
+q("#clear").addEventListener("click",function(){st.sel={};st.example=false;save();renderMenu();paintAll();say("Cleared. Pick a stop to start your own plan.");});
+q("#example").addEventListener("click",function(){st.sel=exampleSel();st.example=true;save();renderMenu();paintAll();say("Example picks loaded.");});
+q("#copy").addEventListener("click",function(){
+  var text=planText(),box=q("#copyBox");
+  function fallback(){box.hidden=false;box.value=text;box.focus();box.select();say("Select and copy the text below.");}
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){box.hidden=true;say("Plan copied.");},fallback);
+    }else fallback();
+  }catch(err){fallback();}
+});
+
+/* ---------- start ---------- */
+q("#dirCw").setAttribute("aria-pressed",st.dir==="cw");
+q("#dirCcw").setAttribute("aria-pressed",st.dir==="ccw");
+renderMenu();paintAll();
+})();
+</script>
+
+</body>
+</html>
