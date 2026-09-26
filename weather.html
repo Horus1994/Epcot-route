@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPCOT Weather</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    background-color: transparent;
+  }
+  .weather-container {
+    box-sizing: border-box;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 16px 24px;
+    width: 100%;
+    max-width: 500px;
+    color: #37352f;
+    border: 1px solid #e9e9e7;
+  }
+  .header {
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 16px;
+    color: #787774;
+  }
+  .forecast {
+    display: flex;
+    justify-content: space-between;
+    overflow-x: auto;
+  }
+  .day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+  }
+  .day-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #787774;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .icon {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  .temps {
+    font-size: 14px;
+  }
+  .rain { font-size: 12px; color: #787774; margin-top: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rain.wet { color: #2383e2; font-weight: 600; }
+  .high { font-weight: 600; }
+  .low { color: #787774; margin-left: 6px; }
+
+  /* Phones: stack high over low so the numbers never collide */
+  @media (max-width: 480px) {
+    .weather-container { padding: 14px 10px; border-radius: 8px; }
+    .forecast { gap: 2px; }
+    .day { flex: 1 1 0; min-width: 0; }
+    .temps { display: flex; flex-direction: column; align-items: center; line-height: 1.35; }
+    .low { margin-left: 0; }
+    .rain { font-size: 11px; }
+  }
+
+  /* Notion Dark Mode Support */
+  @media (prefers-color-scheme: dark) {
+    .weather-container {
+      background: #191919;
+      color: #ffffff;
+      border: 1px solid #333333;
+    }
+    .header, .day-name, .low, .rain { color: #9b9a97; }
+    .rain.wet { color: #5aa9f0; }
+  }
+</style>
+</head>
+<body>
+<div class="weather-container">
+  <div class="header">EPCOT · Lake Buena Vista, FL</div>
+  <div class="forecast" id="forecast">
+    <!-- Forecast data loads here -->
+  </div>
+</div>
+
+<script>
+  async function getWeather() {
+    const lat = 28.375;
+    const lon = -81.549;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=America%2FNew_York`;
+
+    try {
+      let response;
+      try { response = await fetch(url); }
+      catch (e) { await new Promise(r => setTimeout(r, 1500)); response = await fetch(url); }
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const data = await response.json();
+      if (!data.daily) throw new Error('no forecast in response');
+      
+      const forecastEl = document.getElementById('forecast');
+      const daily = data.daily;
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      
+      const weatherIcons = {
+        0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+        45: '🌫️', 48: '🌫️',
+        51: '🌦️', 53: '🌦️', 55: '🌧️', 56: '🌧️', 57: '🌧️',
+        61: '🌧️', 63: '🌧️', 65: '🌧️', 66: '🌧️', 67: '🌧️',
+        71: '❄️', 73: '❄️', 75: '❄️', 77: '❄️',
+        80: '🌦️', 81: '🌧️', 82: '🌧️', 85: '❄️', 86: '❄️',
+        95: '⛈️', 96: '⛈️', 99: '⛈️'
+      };
+
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(daily.time[i] + 'T00:00:00');
+        const dayName = i === 0 ? 'Today' : days[date.getDay()];
+        const maxTemp = Math.round(daily.temperature_2m_max[i]);
+        const minTemp = Math.round(daily.temperature_2m_min[i]);
+        const code = daily.weathercode[i];
+        const icon = weatherIcons[code] || '🌡️';
+        const rain = Math.round(daily.precipitation_probability_max[i] || 0);
+
+        forecastEl.innerHTML += `
+          <div class="day">
+            <div class="day-name">${dayName}</div>
+            <div class="icon">${icon}</div>
+            <div class="temps">
+              <span class="high">${maxTemp}°</span><span class="low">${minTemp}°</span>
+            </div>
+            <div class="rain${rain >= 50 ? ' wet' : ''}">💧${rain}%</div>
+          </div>
+        `;
+      }
+    } catch (error) {
+      document.getElementById('forecast').innerHTML = '<div style="font-size:12px; color:#e03e3e;">Failed to load forecast (' + (error && error.message ? error.message : 'error') + '). Reload to try again.</div>';
+    }
+  }
+  getWeather();
+</script>
+</body>
+</html>
