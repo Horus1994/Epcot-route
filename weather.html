@@ -11,17 +11,18 @@
     padding: 0;
     display: flex;
     justify-content: center;
-    background-color: transparent;
+    background-color: #ffffff;
   }
+  html { background-color: #ffffff; }
   .weather-container {
     box-sizing: border-box;
-    background: #ffffff;
-    border-radius: 10px;
-    padding: 16px 24px;
+    background: transparent;
+    border-radius: 0;
+    padding: 12px 8px;
     width: 100%;
     max-width: 500px;
     color: #37352f;
-    border: 1px solid #e9e9e7;
+    border: 0;
   }
   .header {
     margin-bottom: 16px;
@@ -71,15 +72,27 @@
 
   /* Notion Dark Mode Support */
   @media (prefers-color-scheme: dark) {
-    .weather-container {
-      background: #191919;
-      color: #ffffff;
-      border: 1px solid #333333;
-    }
+    html, body { background-color: #191919; }
+    .weather-container { color: #ffffff; }
     .header, .day-name, .low, .rain { color: #9b9a97; }
     .rain.wet { color: #5aa9f0; }
   }
+  /* Manual override: add ?theme=dark or ?theme=light to the embed URL */
+  html.force-dark, html.force-dark body { background-color: #191919; }
+  html.force-dark .weather-container { color: #ffffff; }
+  html.force-dark .header, html.force-dark .day-name, html.force-dark .low, html.force-dark .rain { color: #9b9a97; }
+  html.force-dark .rain.wet { color: #5aa9f0; }
+  html.force-light, html.force-light body { background-color: #ffffff; }
+  html.force-light .weather-container { color: #37352f; }
+  html.force-light .header, html.force-light .day-name, html.force-light .low, html.force-light .rain { color: #787774; }
+  html.force-light .rain.wet { color: #2383e2; }
 </style>
+<script>
+  (function () {
+    var m = /[?&]theme=(dark|light)/.exec(location.search);
+    if (m) document.documentElement.className = 'force-' + m[1];
+  })();
+</script>
 </head>
 <body>
 <div class="weather-container">
